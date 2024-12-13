@@ -20,6 +20,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use ieee.math_real.all;
 
 library neorv32;
 use neorv32.neorv32_package.all;
@@ -29,7 +30,8 @@ entity neorv32_firq_arbiter is
     FIRQ_ARBITER_EN : boolean := false;
     ALL_CHANNEL_EN  : boolean := true;
     DEFAULT_EN      : boolean := true;
-    ALL_WR_PROT_EN  : boolean := true 
+    INIT_PROT_LEVEL : std_ulogic_vector := "11";
+    INIT_CH_ASSIGN  : firq_enum_t
   );
   port (
     clk_i           : in  std_ulogic;
@@ -55,7 +57,7 @@ architecture neorv32_firq_arbiter_rtl of neorv32_firq_arbiter is
   -- locked down protection level can't be changed during runtime
   constant ch_prot_level_3_c : std_ulogic_vector(1 downto 0) := "11";
 
-  type channel_num_t is array(0 to 15) of std_ulogic_vector(log2_ceil(firq_enum_t) - 1 dwonto 0);
+  type channel_num_t is array(0 to 15) of std_ulogic_vector(clog2(firq_o'length) - 1 dwonto 0);
   type channel_wrpr_level_t is array(0 to 15) of std_ulogic_vector(1 downto 0);
  
   type ctrl_t is record
@@ -65,6 +67,15 @@ architecture neorv32_firq_arbiter_rtl of neorv32_firq_arbiter is
   end record ctrl_t;
   signal ctrl : ctrl_t;
 
+
+  function firq_channel_init(constant irq_inputs : firq_enum_t) return channel_num_t is
+    variable init_channel_assign_v : channel_enum_t := (others => (others => '0'));
+  begin
+    for i in channel_enum_t'range loop
+      init_channel_assign_v(i) <= irq_inputs(i);
+    end loop;
+    return init_channel_assign_v;
+  end function firq_channel_init;
 begin
   
   lGenNoArbiter: if not(FIRQ_ARBITER_EN) generate
@@ -97,11 +108,8 @@ begin
         else
           ctrl_firq_channel_en_mask  <= (others => '0');
         end if;
-        if ALL_WR_PROT_EN then
-          ctrl.firq_channel_wrpr_mask <= ch_prot_level_3_c; -- prot-lvl can't be changed
-        else
-          ctrl.firq_channel_wrpr_mask <= ch_prot_level_0_c; 
-        end if;
+        ctrl.firq_channel_wrpr_mask <= INIT_PROT_LEVEL; 
+        ctrl.firq_channel_assign    <= firq_channel_init(INIT_CH_ASSIGN);
       elsif rising_edge(clk_i) then
         bus_rsp_o.ack  <= bus_req_i.stb;
         bus_rsp_o.err  <= '0';
