@@ -322,11 +322,11 @@ architecture neorv32_top_rtl of neorv32_top is
   signal iodev_rsp : iodev_rsp_t;
 
   -- IRQs --
-  type firq_enum_t is (
-    FIRQ_TRNG, FIRQ_UART0_RX, FIRQ_UART0_TX, FIRQ_UART1_RX, FIRQ_UART1_TX, FIRQ_SPI, FIRQ_SDI, FIRQ_TWI,
-    FIRQ_CFS, FIRQ_NEOLED, FIRQ_XIRQ, FIRQ_GPTMR, FIRQ_ONEWIRE, FIRQ_DMA, FIRQ_SLINK_RX, FIRQ_SLINK_TX
-  );
-  type firq_t is array (firq_enum_t) of std_ulogic;
+--  type firq_enum_t is (
+--    FIRQ_TRNG, FIRQ_UART0_RX, FIRQ_UART0_TX, FIRQ_UART1_RX, FIRQ_UART1_TX, FIRQ_SPI, FIRQ_SDI, FIRQ_TWI,
+--    FIRQ_CFS, FIRQ_NEOLED, FIRQ_XIRQ, FIRQ_GPTMR, FIRQ_ONEWIRE, FIRQ_DMA, FIRQ_SLINK_RX, FIRQ_SLINK_TX
+--  );
+--  type firq_t is array (firq_enum_t) of std_ulogic;
   signal firq      : firq_t;
   signal cpu_firq  : std_ulogic_vector(15 downto 0);
   signal mtime_irq : std_ulogic;

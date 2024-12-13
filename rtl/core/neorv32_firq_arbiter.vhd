@@ -68,22 +68,22 @@ architecture neorv32_firq_arbiter_rtl of neorv32_firq_arbiter is
 begin
   
   lGenNoArbiter: if not(FIRQ_ARBITER_EN) generate
-    firq_o(0)  <= irq_i(FIRQ_TRNG);
-    firq_o(1)  <= irq_i(FIRQ_CFS);
-    firq_o(2)  <= irq_i(FIRQ_UART0_RX);
-    firq_o(3)  <= irq_i(FIRQ_UART0_TX);
-    firq_o(4)  <= irq_i(FIRQ_UART1_RX);
-    firq_o(5)  <= irq_i(FIRQ_UART1_TX);
-    firq_o(6)  <= irq_i(FIRQ_SPI);
-    firq_o(7)  <= irq_i(FIRQ_TWI);
-    firq_o(8)  <= irq_i(FIRQ_XIRQ);
-    firq_o(9)  <= irq_i(FIRQ_NEOLED);
-    firq_o(10) <= irq_i(FIRQ_DMA);
-    firq_o(11) <= irq_i(FIRQ_SDI);
-    firq_o(12) <= irq_i(FIRQ_GPTMR);
-    firq_o(13) <= irq_i(FIRQ_ONEWIRE);
-    firq_o(14) <= irq_i(FIRQ_SLINK_RX);
-    firq_o(15) <= irq_i(FIRQ_SLINK_TX);
+    firq_o(irq_firq_0_c)  <= irq_i(FIRQ_TRNG);
+    firq_o(irq_firq_1_c)  <= irq_i(FIRQ_CFS);
+    firq_o(irq_firq_2_c)  <= irq_i(FIRQ_UART0_RX);
+    firq_o(irq_firq_3_c)  <= irq_i(FIRQ_UART0_TX);
+    firq_o(irq_firq_4_c)  <= irq_i(FIRQ_UART1_RX);
+    firq_o(irq_firq_5_c)  <= irq_i(FIRQ_UART1_TX);
+    firq_o(irq_firq_6_c)  <= irq_i(FIRQ_SPI);
+    firq_o(irq_firq_7_c)  <= irq_i(FIRQ_TWI);
+    firq_o(irq_firq_8_c)  <= irq_i(FIRQ_XIRQ);
+    firq_o(irq_firq_9_c)  <= irq_i(FIRQ_NEOLED);
+    firq_o(irq_firq_10_c) <= irq_i(FIRQ_DMA);
+    firq_o(irq_firq_11_c) <= irq_i(FIRQ_SDI);
+    firq_o(irq_firq_12_c) <= irq_i(FIRQ_GPTMR);
+    firq_o(irq_firq_13_c) <= irq_i(FIRQ_ONEWIRE);
+    firq_o(irq_firq_14_c) <= irq_i(FIRQ_SLINK_RX);
+    firq_o(irq_firq_15_c) <= irq_i(FIRQ_SLINK_TX);
   end generate lGenNoArbiter;
 
   lGenArbiter: if FIRQ_ARBITER_EN generate
@@ -111,8 +111,21 @@ begin
           if '1' = bus_req_i.rw then -- write access
             if '0' = bus_req_i.addr(2) then
                 ctrl.firq_channel_en_mask <= bus_req_i.data(channel_en_mask_msb_c downto channel_en_mask_lsb);
-              elsif false then -- define addresses used for this peripheral
+              elsif '1' = bus_req_i.addr(2) then -- define addresses used for this peripheral
               -- todo: impelemnt input to output channel assignment based on register protection level
+              if '0' = bus_req_i.addr(0) then
+                for i in 0 to 7 loop
+                  if '0' = ctrl.firq_channel_wrpr_mask(i)(1) then
+                    ctrl.firq_channel_wrpr_mask(i) <= bus_req_i.data((4*(i+1)) - 1 downto 4*i);
+                  end if;
+                end loop
+              else
+                for in 8 to 15 loop
+                  if '0' = ctrl.firq_channel_wrpr_mask(i)(1) then
+                    ctrl.firq_channel_assign(i) <= bus_req_i.data((4*(i+1)) - 1 downto 4*i);
+                  end if;
+                end loop;
+              end if;
             else
               for i in channel_wrpr_level_t'range loop
                 if ch_prot_level_3_c /= ctrl.firq_channel_wrpr_mask(i) then
@@ -134,12 +147,20 @@ begin
           else  -- read access
             if '0' = bus_req_i.addr(2) is
               bus_rsp_o.data(channel_en_mask_msb_c downto channel_en_mask_lsb_c) <= ctrl.firq_channel_en_mask;
-
-            elsif false then
+            elsif '1' = bus_req_i.addr(2) then
               -- todo: implement input to output channel assignment reading
+              if '0' = bus_req_i.addr(0) then
+                for i in 0 to 7 loop
+                  bus_rsp_o.data((4*(i+1)) - 1 downto 4*i) <= ctrl.firq_channel_assign(i);
+                end loop;
+              else
+                for i in 8 to 15 loop
+                  bus_rsp_o.data((4*(i+1)) - 1 downto 4*i) <= ctrl.firq_channel_assign(i)
+                end loop;
+              end if;
             else
               for i in channel_wrpr_level_t'range loop
-                bus_rsp_o.data((2*(i+1)) - 1 downto 2*i) <= ctrl.firq_channel_en_mask(i);
+                bus_rsp_o.data((2*(i+1)) - 1 downto 2*i) <= ctrl.firq_channel_wrpr_mask(i);
               end loop;
             end if;
           end if;

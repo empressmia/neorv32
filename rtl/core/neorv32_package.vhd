@@ -650,6 +650,14 @@ package neorv32_package is
   constant irq_db_step_c  : natural := 20; -- enter debug mode via single-stepping
   constant irq_width_c    : natural := 21; -- length of this list in bits
 
+  -- types --
+  ----------------------------------------------------------------------------------------------
+  type firq_enum_t is (
+    FIRQ_TRNG, FIRQ_UART0_RX, FIRQ_UART0_TX, FIRQ_UART1_RX, FIRQ_UART1_TX, FIRQ_SPI, FIRQ_SDI, FIRQ_TWI,
+    FIRQ_CFS, FIRQ_NEOLED, FIRQ_XIRQ, FIRQ_GPTMR, FIRQ_ONEWIRE, FIRQ_DMA, FIRQ_SLINK_RX, FIRQ_SLINK_TX
+  );
+  type firq_t is array (firq_enum_t) of std_ulogic;
+
   -- Privilege Modes ------------------------------------------------------------------------
   -- -------------------------------------------------------------------------------------------
   constant priv_mode_m_c : std_ulogic := '1'; -- machine mode
