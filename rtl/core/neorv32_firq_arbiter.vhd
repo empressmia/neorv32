@@ -119,7 +119,6 @@ begin
             if '0' = bus_req_i.addr(2) then
                 ctrl.firq_channel_en_mask <= bus_req_i.data(channel_en_mask_msb_c downto channel_en_mask_lsb);
               elsif '1' = bus_req_i.addr(2) then -- define addresses used for this peripheral
-              -- todo: impelemnt input to output channel assignment based on register protection level
               if '0' = bus_req_i.addr(0) then
                 for i in 0 to 7 loop
                   if '0' = ctrl.firq_channel_wrpr_mask(i)(1) then
@@ -155,8 +154,8 @@ begin
             if '0' = bus_req_i.addr(2) is
               bus_rsp_o.data(channel_en_mask_msb_c downto channel_en_mask_lsb_c) <= ctrl.firq_channel_en_mask;
             elsif '1' = bus_req_i.addr(2) then
-              -- todo: implement input to output channel assignment reading
               if '0' = bus_req_i.addr(0) then
+                -- only valid as long as there are 'only' 16 fast-irq channels
                 for i in 0 to 7 loop
                   bus_rsp_o.data((4*(i+1)) - 1 downto 4*i) <= ctrl.firq_channel_assign(i);
                 end loop;
@@ -178,7 +177,7 @@ begin
     l_assign_output: process(ctrl) is
       -- assertion: no clocked process to avoid further delay due induced flip flop
     begin
-      -- range is reversed which allows lower input numbers to be at higher 
+      -- range is reversed which allows lower input port numbers to be at higher 
       -- priority firq-channels;
       for i in firq_o'reverse_range loop
         -- check if channel is enabled or all channel enabled option
