@@ -144,7 +144,8 @@ entity neorv32_top is
     IO_SLINK_EN           : boolean                        := false;       -- implement stream link interface (SLINK)?
     IO_SLINK_RX_FIFO      : natural range 1 to 2**15       := 1;           -- RX fifo depth, has to be a power of two, min 1
     IO_SLINK_TX_FIFO      : natural range 1 to 2**15       := 1;           -- TX fifo depth, has to be a power of two, min 1
-    IO_CRC_EN             : boolean                        := false        -- implement cyclic redundancy check unit (CRC)?
+    IO_CRC_EN             : boolean                        := false;       -- implement cyclic redundancy check unit (CRC)?
+    IO_FIRQ_ARB_EN        : boolean                        := false
   );
   port (
     -- Global control --
@@ -314,7 +315,8 @@ architecture neorv32_top_rtl of neorv32_top is
   type io_devices_enum_t is (
     IODEV_OCD, IODEV_SYSINFO, IODEV_NEOLED, IODEV_GPIO, IODEV_WDT, IODEV_TRNG, IODEV_TWI,
     IODEV_SPI, IODEV_SDI, IODEV_UART1, IODEV_UART0, IODEV_MTIME, IODEV_XIRQ, IODEV_ONEWIRE,
-    IODEV_GPTMR, IODEV_PWM, IODEV_XIP, IODEV_CRC, IODEV_DMA, IODEV_SLINK, IODEV_CFS
+    IODEV_GPTMR, IODEV_PWM, IODEV_XIP, IODEV_CRC, IODEV_DMA, IODEV_SLINK, IODEV_CFS,
+    IODEV_FIRQ
   );
   type iodev_req_t is array (io_devices_enum_t) of bus_req_t;
   type iodev_rsp_t is array (io_devices_enum_t) of bus_rsp_t;
@@ -375,6 +377,7 @@ begin
       cond_sel_string_f(IO_DMA_EN,                 "DMA ",        "") &
       cond_sel_string_f(IO_SLINK_EN,               "SLINK ",      "") &
       cond_sel_string_f(IO_CRC_EN,                 "CRC ",        "") &
+      cond_sel_string_f(IO_FIRQ_ARB_EN,            "FIRQ-CRSB ",  "") &
       cond_sel_string_f(io_sysinfo_en_c,           "SYSINFO ",    "") &
       cond_sel_string_f(OCD_EN,                    cond_sel_string_f(OCD_AUTHENTICATION, "OCD-AUTH ", "OCD "), "") &
       ""
@@ -543,23 +546,41 @@ begin
       dbus_rsp_i => cpu_d_rsp
     );
 
+    -- IRQ crossbar ---------------------------------------------------------------------------------
+    -------------------------------------------------------------------------------------------------
+    neorv32_irq_crossbar_inst_true:
+      if IRQ_CROSSBAR_EN generate
+        neorv32_irq_crossbar_inst: entity neorv32.neorv32_firq_arbiter
+          generic map (
+            FIRQ_ARBITER_EN => false,
+          )
+          port map (
+            clk_i => clk_i,
+            rstn_i => rstn_i,
+            bus_req_i => ,
+            bus_rsp_o => ,
+            irq_i => firq,
+            firg_o => cpu_firq
+          );
+      end generate;
+
     -- fast interrupt requests (FIRQs) --
-    cpu_firq(0)  <= firq(FIRQ_TRNG);
-    cpu_firq(1)  <= firq(FIRQ_CFS);
-    cpu_firq(2)  <= firq(FIRQ_UART0_RX);
-    cpu_firq(3)  <= firq(FIRQ_UART0_TX);
-    cpu_firq(4)  <= firq(FIRQ_UART1_RX);
-    cpu_firq(5)  <= firq(FIRQ_UART1_TX);
-    cpu_firq(6)  <= firq(FIRQ_SPI);
-    cpu_firq(7)  <= firq(FIRQ_TWI);
-    cpu_firq(8)  <= firq(FIRQ_XIRQ);
-    cpu_firq(9)  <= firq(FIRQ_NEOLED);
-    cpu_firq(10) <= firq(FIRQ_DMA);
-    cpu_firq(11) <= firq(FIRQ_SDI);
-    cpu_firq(12) <= firq(FIRQ_GPTMR);
-    cpu_firq(13) <= firq(FIRQ_ONEWIRE);
-    cpu_firq(14) <= firq(FIRQ_SLINK_RX);
-    cpu_firq(15) <= firq(FIRQ_SLINK_TX);
+--  cpu_firq(0)  <= firq(FIRQ_TRNG);
+--  cpu_firq(1)  <= firq(FIRQ_CFS);
+--  cpu_firq(2)  <= firq(FIRQ_UART0_RX);
+--  cpu_firq(3)  <= firq(FIRQ_UART0_TX);
+--  cpu_firq(4)  <= firq(FIRQ_UART1_RX);
+--  cpu_firq(5)  <= firq(FIRQ_UART1_TX);
+--  cpu_firq(6)  <= firq(FIRQ_SPI);
+--  cpu_firq(7)  <= firq(FIRQ_TWI);
+--  cpu_firq(8)  <= firq(FIRQ_XIRQ);
+--  cpu_firq(9)  <= firq(FIRQ_NEOLED);
+--  cpu_firq(10) <= firq(FIRQ_DMA);
+--  cpu_firq(11) <= firq(FIRQ_SDI);
+--  cpu_firq(12) <= firq(FIRQ_GPTMR);
+--  cpu_firq(13) <= firq(FIRQ_ONEWIRE);
+--  cpu_firq(14) <= firq(FIRQ_SLINK_RX);
+--  cpu_firq(15) <= firq(FIRQ_SLINK_TX);
 
 
     -- CPU Instruction Cache (I-Cache) --------------------------------------------------------
@@ -1023,7 +1044,7 @@ begin
       DEV_18_EN => IO_DMA_EN,       DEV_18_BASE => base_io_dma_c,
       DEV_19_EN => IO_SLINK_EN,     DEV_19_BASE => base_io_slink_c,
       DEV_20_EN => IO_CFS_EN,       DEV_20_BASE => base_io_cfs_c,
-      DEV_21_EN => false,           DEV_31_BASE => (others => '0'), -- reserved
+      DEV_21_EN => IO_FIRQ_ARB_EN,  DEV_31_BASE => (others => '0'), -- reserved
       DEV_22_EN => false,           DEV_30_BASE => (others => '0'), -- reserved
       DEV_23_EN => false,           DEV_29_BASE => (others => '0'), -- reserved
       DEV_24_EN => false,           DEV_28_BASE => (others => '0'), -- reserved
@@ -1033,7 +1054,7 @@ begin
       DEV_28_EN => false,           DEV_24_BASE => (others => '0'), -- reserved
       DEV_29_EN => false,           DEV_23_BASE => (others => '0'), -- reserved
       DEV_30_EN => false,           DEV_22_BASE => (others => '0'), -- reserved
-      DEV_31_EN => false,           DEV_21_BASE => (others => '0')  -- reserved
+      DEV_31_EN => false,           DEV_21_BASE =>  base_io_firq_cb_c -- reserved
     )
     port map (
       clk_i        => clk_i,
@@ -1061,7 +1082,7 @@ begin
       dev_18_req_o => iodev_req(IODEV_DMA),     dev_18_rsp_i => iodev_rsp(IODEV_DMA),
       dev_19_req_o => iodev_req(IODEV_SLINK),   dev_19_rsp_i => iodev_rsp(IODEV_SLINK),
       dev_20_req_o => iodev_req(IODEV_CFS),     dev_20_rsp_i => iodev_rsp(IODEV_CFS),
-      dev_21_req_o => open,                     dev_21_rsp_i => rsp_terminate_c, -- reserved
+      dev_21_req_o => iodev_req(IODEV_FIRQ),    dev_21_rsp_i => iodev_rsp(IODEV_FIRQ),
       dev_22_req_o => open,                     dev_22_rsp_i => rsp_terminate_c, -- reserved
       dev_23_req_o => open,                     dev_23_rsp_i => rsp_terminate_c, -- reserved
       dev_24_req_o => open,                     dev_24_rsp_i => rsp_terminate_c, -- reserved

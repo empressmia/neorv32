@@ -11,7 +11,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use ieee.math_real.all;
 
 package neorv32_package is
 
@@ -73,7 +72,7 @@ package neorv32_package is
 --constant base_io_???_c     : std_ulogic_vector(31 downto 0) := x"ffffe700"; -- reserved
 --constant base_io_???_c     : std_ulogic_vector(31 downto 0) := x"ffffe800"; -- reserved
 --constant base_io_???_c     : std_ulogic_vector(31 downto 0) := x"ffffe900"; -- reserved
---constant base_io_???_c     : std_ulogic_vector(31 downto 0) := x"ffffea00"; -- reserved
+  constant base_io_firq_cb_c : std_ulogic_vector(31 downto 0) := x"ffffea00"; -- reserved
   constant base_io_cfs_c     : std_ulogic_vector(31 downto 0) := x"ffffeb00";
   constant base_io_slink_c   : std_ulogic_vector(31 downto 0) := x"ffffec00";
   constant base_io_dma_c     : std_ulogic_vector(31 downto 0) := x"ffffed00";
@@ -707,6 +706,7 @@ package neorv32_package is
   impure function mem32_init_f(init : mem32_t; depth : natural) return mem32_t;
   function print_version_f(version : std_ulogic_vector(31 downto 0)) return string;
   function clog2(constant width_c : integer) return integer;
+  function firq_channel_init(constant channel : channel_num_t)
 
 -- **********************************************************************************************************
 -- NEORV32 Processor Top Entity (component prototype)
