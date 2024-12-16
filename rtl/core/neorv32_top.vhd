@@ -549,16 +549,16 @@ begin
     -- IRQ crossbar ---------------------------------------------------------------------------------
     -------------------------------------------------------------------------------------------------
     neorv32_irq_crossbar_inst_true:
-      if IRQ_CROSSBAR_EN generate
+      if IO_FIRQ_ARB_EN generate
         neorv32_irq_crossbar_inst: entity neorv32.neorv32_firq_arbiter
           generic map (
-            FIRQ_ARBITER_EN => false,
+            FIRQ_ARBITER_EN => false
           )
           port map (
             clk_i => clk_i,
             rstn_i => rstn_i,
-            bus_req_i => ,
-            bus_rsp_o => ,
+            bus_req_i => iodev_rsq(IODEV_FIRQ),
+            bus_rsp_o => iodev_rsp(IODEV_FIRQ),
             irq_i => firq,
             firg_o => cpu_firq
           );
@@ -568,8 +568,8 @@ begin
 --  cpu_firq(0)  <= firq(FIRQ_TRNG);
 --  cpu_firq(1)  <= firq(FIRQ_CFS);
 --  cpu_firq(2)  <= firq(FIRQ_UART0_RX);
---  cpu_firq(3)  <= firq(FIRQ_UART0_TX);
---  cpu_firq(4)  <= firq(FIRQ_UART1_RX);
+--  cpu_firq(3)  <= firq(firq_UART0_TX);
+--  cpu_firq(4)  <= firq(firq_UART1_RX);
 --  cpu_firq(5)  <= firq(FIRQ_UART1_TX);
 --  cpu_firq(6)  <= firq(FIRQ_SPI);
 --  cpu_firq(7)  <= firq(FIRQ_TWI);

@@ -26,11 +26,12 @@ use neorv32.neorv32_package.all;
 
 entity neorv32_firq_arbiter is
   generic (
+    NUM_OUTPUT_CH   : integer := 16;
     FIRQ_ARBITER_EN : boolean := false;
     ALL_CHANNEL_EN  : boolean := true;
     DEFAULT_EN      : boolean := true;
     INIT_PROT_LEVEL : std_ulogic_vector := "11";
-    INIT_CH_ASSIGN  : firq_enum_t
+    INIT_CH_ASSIGN  : firq_enum_t := firq_enum_t
   );
   port (
     clk_i           : in  std_ulogic;
@@ -38,7 +39,7 @@ entity neorv32_firq_arbiter is
     bus_req_i       : in  bus_req_t;
     bus_rsp_o       : out bus_rsp_t;
     irq_i           : in  firq_t;
-    firq_o          : out std_ulogic_vector(15 downto 0)
+    firq_o          : out std_ulogic_vector(NUM_OUTPUT_CH - 1 downto 0)
   );
 end entity neorv32_firq_arbiter;
 
@@ -56,7 +57,8 @@ architecture neorv32_firq_arbiter_rtl of neorv32_firq_arbiter is
   -- locked down protection level can't be changed during runtime
   constant ch_prot_level_3_c : std_ulogic_vector(1 downto 0) := "11";
 
-  type channel_num_t is array(0 to 15) of std_ulogic_vector(clog2(firq_o'length) - 1 dwonto 0);
+  type channel_num_t is array(0 to firq_o'length - 1) of 
+       std_ulogic_vector(clog2(firq_o'length) - 1 downto 0);
   type channel_wrpr_level_t is array(0 to 15) of std_ulogic_vector(1 downto 0);
  
   type ctrl_t is record
@@ -68,13 +70,14 @@ architecture neorv32_firq_arbiter_rtl of neorv32_firq_arbiter is
 
 
   function firq_channel_init(constant irq_inputs : firq_enum_t) return channel_num_t is
-    variable init_channel_assign_v : channel_enum_t := (others => (others => '0'));
+    variable init_channel_assign_v : channel_num_t := (others => (others => '0'));
   begin
-    for i in channel_enum_t'range loop
-      init_channel_assign_v(i) <= irq_inputs(i);
+    for i in channel_num_t'range loop
+      init_channel_assign_v(i) := std_ulogic_vector(to_unsigned(irq_inputs'pos(i), init_channel_assign_v(i)'length));
     end loop;
     return init_channel_assign_v;
   end function firq_channel_init;
+
 begin
   
   lGenNoArbiter: if not(FIRQ_ARBITER_EN) generate
@@ -105,9 +108,9 @@ begin
         if ALL_CHANNEL_EN then
           ctrl.firq_channel_en_mask  <= (others => '1'); 
         else
-          ctrl_firq_channel_en_mask  <= (others => '0');
+          ctrl.firq_channel_en_mask  <= (others => '0');
         end if;
-        ctrl.firq_channel_wrpr_mask <= INIT_PROT_LEVEL; 
+        ctrl.firq_channel_wrpr_mask <= (others => INIT_PROT_LEVEL); 
         ctrl.firq_channel_assign    <= firq_channel_init(INIT_CH_ASSIGN);
       elsif rising_edge(clk_i) then
         bus_rsp_o.ack  <= bus_req_i.stb;
@@ -116,17 +119,17 @@ begin
         -- read/write access
         if '1' = bus_req_i.stb then
           if '1' = bus_req_i.rw then -- write access
-            if '0' = bus_req_i.addr(2) then
-                ctrl.firq_channel_en_mask <= bus_req_i.data(channel_en_mask_msb_c downto channel_en_mask_lsb);
+            if '0' = bus_req_i.addr(3) then
+                ctrl.firq_channel_en_mask <= bus_req_i.data(channel_en_mask_msb_c downto channel_en_mask_lsb_c);
               elsif '1' = bus_req_i.addr(2) then -- define addresses used for this peripheral
-              if '0' = bus_req_i.addr(0) then
+              if '1' = bus_req_i.addr(3) then
                 for i in 0 to 7 loop
                   if '0' = ctrl.firq_channel_wrpr_mask(i)(1) then
                     ctrl.firq_channel_wrpr_mask(i) <= bus_req_i.data((4*(i+1)) - 1 downto 4*i);
                   end if;
-                end loop
+                end loop;
               else
-                for in 8 to 15 loop
+                for i in 8 to 15 loop
                   if '0' = ctrl.firq_channel_wrpr_mask(i)(1) then
                     ctrl.firq_channel_assign(i) <= bus_req_i.data((4*(i+1)) - 1 downto 4*i);
                   end if;
@@ -135,14 +138,14 @@ begin
             else
               for i in channel_wrpr_level_t'range loop
                 if ch_prot_level_3_c /= ctrl.firq_channel_wrpr_mask(i) then
-                  if ch_prot_level_2_c = ctrl_firq_channel_wrpr_mask(i) then
-                    if ch_prot_level_1 = bus_req_i.data((2*(i+1)) - 1 downto 2*i) then
+                  if ch_prot_level_2_c = ctrl.firq_channel_wrpr_mask(i) then
+                    if ch_prot_level_1_c = bus_req_i.data((2*(i+1)) - 1 downto 2*i) then
                       -- allow channel protection to be unlocked
                       ctrl.firq_channel_wrpr_mask(i) <= bus_req_i.data((2*(i+1)) - 1 downto 2*i);
                     end if;
-                  elsif ch_prot_level_1_c = ctrl_firq_channel_wrpr_mask(i) then
-                    if ch_prot_level_0 /= bus_req_i.data((2*(i+1)) - 1 downto 2*i) and
-                       ch_prot_level_1 /= bus_req_i.data((2*(i+1)) - 1 downto 2*i) then
+                  elsif ch_prot_level_1_c = ctrl.firq_channel_wrpr_mask(i) then
+                    if ch_prot_level_0_c /= bus_req_i.data((2*(i+1)) - 1 downto 2*i) and
+                       ch_prot_level_1_c /= bus_req_i.data((2*(i+1)) - 1 downto 2*i) then
                       -- allow the channel to be locked or permanently closed 
                       ctrl.firq_channel_wrpr_mask(i) <= bus_req_i.data((2*(i+1)) - 1 downto 2*i);
                     end if;
@@ -151,9 +154,9 @@ begin
               end loop;
             end if;
           else  -- read access
-            if '0' = bus_req_i.addr(2) is
+            if '0' = bus_req_i.addr(3) then
               bus_rsp_o.data(channel_en_mask_msb_c downto channel_en_mask_lsb_c) <= ctrl.firq_channel_en_mask;
-            elsif '1' = bus_req_i.addr(2) then
+            elsif '1' = bus_req_i.addr(3) then
               if '0' = bus_req_i.addr(0) then
                 -- only valid as long as there are 'only' 16 fast-irq channels
                 for i in 0 to 7 loop
@@ -161,7 +164,7 @@ begin
                 end loop;
               else
                 for i in 8 to 15 loop
-                  bus_rsp_o.data((4*(i+1)) - 1 downto 4*i) <= ctrl.firq_channel_assign(i)
+                  bus_rsp_o.data((4*(i+1)) - 1 downto 4*i) <= ctrl.firq_channel_assign(i);
                 end loop;
               end if;
             else
@@ -181,7 +184,7 @@ begin
       -- priority firq-channels;
       for i in firq_o'reverse_range loop
         -- check if channel is enabled or all channel enabled option
-        if '1' = ctrl.channel_en_mask(i) or ALL_CHANNEL_EN then
+        if '1' = ctrl.firq_channel_en_mask(i) or ALL_CHANNEL_EN then
           if DEFAULT_EN then
             -- n-th input of entity irq_i port is forwarded to n-th firq_o output port
             -- which should equal to default 

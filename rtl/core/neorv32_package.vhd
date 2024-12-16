@@ -706,7 +706,7 @@ package neorv32_package is
   impure function mem32_init_f(init : mem32_t; depth : natural) return mem32_t;
   function print_version_f(version : std_ulogic_vector(31 downto 0)) return string;
   function clog2(constant width_c : integer) return integer;
-  function firq_channel_init(constant channel : channel_num_t)
+  function firq_channel_init(constant channel : channel_num_t);
 
 -- **********************************************************************************************************
 -- NEORV32 Processor Top Entity (component prototype)
