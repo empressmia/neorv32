@@ -110,6 +110,8 @@ entity neorv32_top is
 
     -- External Interrupts Controller (XIRQ) --
     XIRQ_NUM_CH           : natural range 0 to 32          := 0;           -- number of external IRQ channels (0..32)
+    -- Internal Interrupt Controller (FIRQ-ARBITER)
+    FIRQ_ARBITER_EN       : boolean                        := false;
 
     -- Processor peripherals --
     IO_DISABLE_SYSINFO    : boolean                        := false;       -- disable the SYSINFO module (for advanced users only)
@@ -548,40 +550,40 @@ begin
 
     -- IRQ crossbar ---------------------------------------------------------------------------------
     -------------------------------------------------------------------------------------------------
-    neorv32_irq_crossbar_inst_true:
-      if IO_FIRQ_ARB_EN generate
-        neorv32_irq_crossbar_inst: entity neorv32.neorv32_firq_arbiter
-          generic map (
-            FIRQ_ARBITER_EN => false
-          )
-          port map (
-            clk_i => clk_i,
-            rstn_i => rstn_i,
-            bus_req_i => iodev_rsq(IODEV_FIRQ),
-            bus_rsp_o => iodev_rsp(IODEV_FIRQ),
-            irq_i => firq,
-            firg_o => cpu_firq
-          );
-      end generate;
+    if IO_FIRQ_ARB_EN generate
+        generic map (
+          FIRQ_ARBITER_EN => false
+        )
+        port map (
+          clk_i => clk_i,
+          rstn_i => rstn_i,
+          bus_req_i => iodev_rsq(IODEV_FIRQ),
+          bus_rsp_o => iodev_rsp(IODEV_FIRQ),
+          irq_i => firq,
+          firg_o => cpu_firq
+        );
+    end generate;
 
+    if not(FIRQ_ARBITER_EN) generate
     -- fast interrupt requests (FIRQs) --
---  cpu_firq(0)  <= firq(FIRQ_TRNG);
---  cpu_firq(1)  <= firq(FIRQ_CFS);
---  cpu_firq(2)  <= firq(FIRQ_UART0_RX);
---  cpu_firq(3)  <= firq(firq_UART0_TX);
---  cpu_firq(4)  <= firq(firq_UART1_RX);
---  cpu_firq(5)  <= firq(FIRQ_UART1_TX);
---  cpu_firq(6)  <= firq(FIRQ_SPI);
---  cpu_firq(7)  <= firq(FIRQ_TWI);
---  cpu_firq(8)  <= firq(FIRQ_XIRQ);
---  cpu_firq(9)  <= firq(FIRQ_NEOLED);
---  cpu_firq(10) <= firq(FIRQ_DMA);
---  cpu_firq(11) <= firq(FIRQ_SDI);
---  cpu_firq(12) <= firq(FIRQ_GPTMR);
---  cpu_firq(13) <= firq(FIRQ_ONEWIRE);
---  cpu_firq(14) <= firq(FIRQ_SLINK_RX);
---  cpu_firq(15) <= firq(FIRQ_SLINK_TX);
+    cpu_firq(0)  <= firq(FIRQ_TRNG);
+    cpu_firq(1)  <= firq(FIRQ_CFS);
+    cpu_firq(2)  <= firq(FIRQ_UART0_RX);
+    cpu_firq(3)  <= firq(firq_UART0_TX);
+    cpu_firq(4)  <= firq(firq_UART1_RX);
+    cpu_firq(5)  <= firq(FIRQ_UART1_TX);
+    cpu_firq(6)  <= firq(FIRQ_SPI);
+    cpu_firq(7)  <= firq(FIRQ_TWI);
+    cpu_firq(8)  <= firq(FIRQ_XIRQ);
+    cpu_firq(9)  <= firq(FIRQ_NEOLED);
+    cpu_firq(10) <= firq(FIRQ_DMA);
+    cpu_firq(11) <= firq(FIRQ_SDI);
+    cpu_firq(12) <= firq(FIRQ_GPTMR);
+    cpu_firq(13) <= firq(FIRQ_ONEWIRE);
+    cpu_firq(14) <= firq(FIRQ_SLINK_RX);
+    cpu_firq(15) <= firq(FIRQ_SLINK_TX);
 
+    end generate;
 
     -- CPU Instruction Cache (I-Cache) --------------------------------------------------------
     -- -------------------------------------------------------------------------------------------
