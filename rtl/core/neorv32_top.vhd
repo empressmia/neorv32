@@ -550,20 +550,21 @@ begin
 
     -- IRQ crossbar ---------------------------------------------------------------------------------
     -------------------------------------------------------------------------------------------------
-    if IO_FIRQ_ARB_EN generate
-        generic map (
-          FIRQ_ARBITER_EN => false
-        )
+    neorv32_firq_arbiter_inst_true:
+    if FIRQ_ARBITER_EN generate
+        neorv32_firq_arbiter_inst:
+        entity neorv32.neorv32_firq_arbiter
         port map (
           clk_i => clk_i,
           rstn_i => rstn_i,
-          bus_req_i => iodev_rsq(IODEV_FIRQ),
+          bus_req_i => iodev_req(IODEV_FIRQ),
           bus_rsp_o => iodev_rsp(IODEV_FIRQ),
           irq_i => firq,
-          firg_o => cpu_firq
+          firq_o => cpu_firq
         );
     end generate;
 
+    neorv32_firq_arbiter_inst_false:
     if not(FIRQ_ARBITER_EN) generate
     -- fast interrupt requests (FIRQs) --
     cpu_firq(0)  <= firq(FIRQ_TRNG);
@@ -582,7 +583,6 @@ begin
     cpu_firq(13) <= firq(FIRQ_ONEWIRE);
     cpu_firq(14) <= firq(FIRQ_SLINK_RX);
     cpu_firq(15) <= firq(FIRQ_SLINK_TX);
-
     end generate;
 
     -- CPU Instruction Cache (I-Cache) --------------------------------------------------------

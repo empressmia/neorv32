@@ -68,7 +68,6 @@ architecture neorv32_firq_arbiter_rtl of neorv32_firq_arbiter is
   end record ctrl_t;
   signal ctrl : ctrl_t;
 
-
   function firq_channel_init(constant irq_inputs : firq_enum_t) return channel_num_t is
     variable init_channel_assign_v : channel_num_t := (others => (others => '0'));
   begin
