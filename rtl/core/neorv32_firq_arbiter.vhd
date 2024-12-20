@@ -58,7 +58,7 @@ architecture neorv32_firq_arbiter_rtl of neorv32_firq_arbiter is
   constant ch_prot_level_3_c : std_ulogic_vector(1 downto 0) := "11";
 
   type channel_num_t is array(0 to firq_o'length - 1) of 
-       std_ulogic_vector(clog2(firq_o'length) - 1 downto 0);
+       std_ulogic_vector(index_size_f(firq_o'length) - 1 downto 0);
   type channel_wrpr_level_t is array(0 to 15) of std_ulogic_vector(1 downto 0);
  
   type ctrl_t is record

@@ -705,7 +705,6 @@ package neorv32_package is
   function replicate_f(input : std_ulogic; num : natural) return std_ulogic_vector;
   impure function mem32_init_f(init : mem32_t; depth : natural) return mem32_t;
   function print_version_f(version : std_ulogic_vector(31 downto 0)) return string;
-  function clog2(constant width_c : integer) return integer;
   function firq_channel_init(constant channel : channel_num_t);
 
 -- **********************************************************************************************************
@@ -1165,16 +1164,5 @@ package body neorv32_package is
     end loop;
     return res_v;
   end function print_version_f;
-
- -- calculate bits needed for std-(u)logic-vector
--------------------------------------------------------------------------------------------------
-function clog2(constant width_c : integer) return integer is
-  begin
-    if 0 < width_c then
-      return integer(ceil(log2(real(width_c))));
-    else
-      return 0;
-    end if;
-  end function clog2;
 
 end neorv32_package;
