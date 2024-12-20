@@ -705,7 +705,6 @@ package neorv32_package is
   function replicate_f(input : std_ulogic; num : natural) return std_ulogic_vector;
   impure function mem32_init_f(init : mem32_t; depth : natural) return mem32_t;
   function print_version_f(version : std_ulogic_vector(31 downto 0)) return string;
-  function firq_channel_init(constant channel : channel_num_t);
 
 -- **********************************************************************************************************
 -- NEORV32 Processor Top Entity (component prototype)
@@ -788,6 +787,8 @@ package neorv32_package is
       XIP_CACHE_BLOCK_SIZE  : natural range 1 to 2**16       := 256;
       -- External Interrupts Controller (XIRQ) --
       XIRQ_NUM_CH           : natural range 0 to 32          := 0;
+      -- Internal interrupts controller (firq-arbiter)
+      FIRQ_ARBITER_EN       : boolean                        := false;
       -- Processor peripherals --
       IO_DISABLE_SYSINFO    : boolean                        := false;
       IO_GPIO_NUM           : natural range 0 to 64          := 0;
