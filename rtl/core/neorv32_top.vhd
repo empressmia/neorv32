@@ -1049,7 +1049,7 @@ begin
       DEV_18_EN => IO_DMA_EN,       DEV_18_BASE => base_io_dma_c,
       DEV_19_EN => IO_SLINK_EN,     DEV_19_BASE => base_io_slink_c,
       DEV_20_EN => IO_CFS_EN,       DEV_20_BASE => base_io_cfs_c,
-      DEV_21_EN => FIRQ_ARBITER_EN, DEV_31_BASE => (others => '0'), -- reserved
+      DEV_21_EN => FIRQ_ARBITER_EN, DEV_31_BASE => base_io_firq_cb_c,
       DEV_22_EN => false,           DEV_30_BASE => (others => '0'), -- reserved
       DEV_23_EN => false,           DEV_29_BASE => (others => '0'), -- reserved
       DEV_24_EN => false,           DEV_28_BASE => (others => '0'), -- reserved
