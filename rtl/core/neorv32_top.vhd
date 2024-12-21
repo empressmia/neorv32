@@ -558,12 +558,12 @@ begin
           NUM_OUTPUT_CH => cpu_firq'length
         )
         port map (
-          clk_i => clk_i,
-          rstn_i => rstn_i,
+          clk_i     => clk_i,
+          rstn_i    => rstn_i,
           bus_req_i => iodev_req(IODEV_FIRQ),
           bus_rsp_o => iodev_rsp(IODEV_FIRQ),
-          irq_i => to_slv(firq, firq'length),
-          firq_o => cpu_firq
+          irq_i     => to_slv(firq, firq'length),
+          firq_o    => cpu_firq
         );
     end generate;
 

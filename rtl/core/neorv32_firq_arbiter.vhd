@@ -102,13 +102,13 @@ begin
             if '1' = bus_req_i.addr(3) then
               for i in 0 to 7 loop
                 if '0' = ctrl.firq_channel_wrpr_mask(i)(1) then
-                  ctrl.firq_channel_wrpr_mask(i) <= bus_req_i.data((4*(i+1)) - 1 downto 4*i);
+                  ctrl.firq_channel_assign(i) <= bus_req_i.data((4*(i+1)) - 1 downto 4*i);
                 end if;
               end loop;
             else
-              for i in 8 to 15 loop
+              for i in 0 to 7 loop
                 if '0' = ctrl.firq_channel_wrpr_mask(i)(1) then
-                  ctrl.firq_channel_assign(i) <= bus_req_i.data((4*(i+1)) - 1 downto 4*i);
+                  ctrl.firq_channel_assign(i + 8) <= bus_req_i.data((4*(i+1)) - 1 downto 4*i);
                 end if;
               end loop;
             end if;
@@ -140,8 +140,8 @@ begin
                 bus_rsp_o.data((4*(i+1)) - 1 downto 4*i) <= ctrl.firq_channel_assign(i);
               end loop;
             else
-              for i in 8 to 15 loop
-                bus_rsp_o.data((4*(i+1)) - 1 downto 4*i) <= ctrl.firq_channel_assign(i);
+              for i in 0 to 7 loop
+                bus_rsp_o.data((4*(i+1)) - 1 downto 4*i) <= ctrl.firq_channel_assign(i + 8);
               end loop;
             end if;
           else
