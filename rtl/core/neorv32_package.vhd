@@ -705,6 +705,7 @@ package neorv32_package is
   function replicate_f(input : std_ulogic; num : natural) return std_ulogic_vector;
   impure function mem32_init_f(init : mem32_t; depth : natural) return mem32_t;
   function print_version_f(version : std_ulogic_vector(31 downto 0)) return string;
+  function to_slv(constant irq_inputs : firq_t; constant length : integer) return std_logic_vector;
 
 -- **********************************************************************************************************
 -- NEORV32 Processor Top Entity (component prototype)
@@ -1165,5 +1166,20 @@ package body neorv32_package is
     end loop;
     return res_v;
   end function print_version_f;
+
+  function to_slv(
+    constant irq_inputs :  firq_t;
+    constant length     :  integer
+  ) return std_logic_vector is
+    variable vRet : std_logic_vector(length - 1 downto 0) := (others => '0');
+  begin
+    assert 0 < length report "length must be positve - to_slv function call"
+      severity error;
+
+    for i in vRet'reverse_range loop
+      vRet(i) := irq_inputs(i);
+    end loop;
+    return vRet;
+  end function to_slv;
 
 end neorv32_package;
