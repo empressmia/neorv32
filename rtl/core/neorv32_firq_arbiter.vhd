@@ -70,7 +70,7 @@ architecture neorv32_firq_arbiter_rtl of neorv32_firq_arbiter is
   procedure firq_channel_init_p(signal channel_assign : inout channel_num_t) is
   begin
     for i in channel_num_t'range loop
-      channel_assign(i) <= std_logic_vector(to_unsigned(
+      channel_assign(i) <= std_ulogic_vector(to_unsigned(
                              firq_enum_t'pos(firq_enum_t'val(i)), index_size_f(NUM_OUTPUT_CH))
                            );
     end loop;
