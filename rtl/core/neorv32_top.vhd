@@ -378,7 +378,7 @@ begin
       cond_sel_string_f(IO_DMA_EN,                 "DMA ",        "") &
       cond_sel_string_f(IO_SLINK_EN,               "SLINK ",      "") &
       cond_sel_string_f(IO_CRC_EN,                 "CRC ",        "") &
-      cond_sel_string_f(IO_FIRQ_ARB_EN,            "FIRQ-CRSB ",  "") &
+      cond_sel_string_f(FIRQ_ARBITER_EN,           "FIRQ-CRSB ",  "") &
       cond_sel_string_f(io_sysinfo_en_c,           "SYSINFO ",    "") &
       cond_sel_string_f(OCD_EN,                    cond_sel_string_f(OCD_AUTHENTICATION, "OCD-AUTH ", "OCD "), "") &
       ""
@@ -562,7 +562,7 @@ begin
           rstn_i => rstn_i,
           bus_req_i => iodev_req(IODEV_FIRQ),
           bus_rsp_o => iodev_rsp(IODEV_FIRQ),
-          irq_i => to_slv(firq'length),
+          irq_i => to_slv(firq, firq'length),
           firq_o => cpu_firq
         );
     end generate;
@@ -1049,7 +1049,7 @@ begin
       DEV_18_EN => IO_DMA_EN,       DEV_18_BASE => base_io_dma_c,
       DEV_19_EN => IO_SLINK_EN,     DEV_19_BASE => base_io_slink_c,
       DEV_20_EN => IO_CFS_EN,       DEV_20_BASE => base_io_cfs_c,
-      DEV_21_EN => IO_FIRQ_ARB_EN,  DEV_31_BASE => (others => '0'), -- reserved
+      DEV_21_EN => FIRQ_ARBITER_EN, DEV_31_BASE => (others => '0'), -- reserved
       DEV_22_EN => false,           DEV_30_BASE => (others => '0'), -- reserved
       DEV_23_EN => false,           DEV_29_BASE => (others => '0'), -- reserved
       DEV_24_EN => false,           DEV_28_BASE => (others => '0'), -- reserved

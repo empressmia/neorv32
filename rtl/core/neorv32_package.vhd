@@ -1177,7 +1177,7 @@ package body neorv32_package is
       severity error;
 
     for i in vRet'reverse_range loop
-      vRet(i) := irq_inputs(i);
+      vRet(i) := irq_inputs(firq_enum_t'val(i));
     end loop;
     return vRet;
   end function to_slv;

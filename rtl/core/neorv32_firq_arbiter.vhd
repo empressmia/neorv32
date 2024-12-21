@@ -67,14 +67,14 @@ architecture neorv32_firq_arbiter_rtl of neorv32_firq_arbiter is
   end record ctrl_t;
   signal ctrl : ctrl_t;
 
-  function firq_channel_init(constant irq_inputs : firq_enum_t) return channel_num_t is
-    variable init_channel_assign_v : channel_num_t := (others => (others => '0'));
+  procedure firq_channel_init_p(signal channel_assign : inout channel_num_t) is
   begin
     for i in channel_num_t'range loop
-      init_channel_assign_v(i) := std_logic_vector(to_unsigned(i, index_size_f(NUM_OUTPUT_CHANNELS)));
+      channel_assign(i) <= std_logic_vector(to_unsigned(
+                             firq_enum_t'pos(firq_enum_t'val(i)), index_size_f(NUM_OUTPUT_CH))
+                           );
     end loop;
-    return init_channel_assign_v;
-  end function firq_channel_init;
+  end procedure firq_channel_init_p;
 
 begin
 
@@ -88,7 +88,7 @@ begin
         ctrl.firq_channel_en_mask  <= (others => '0');
       end if;
       ctrl.firq_channel_wrpr_mask <= (others => INIT_PROT_LEVEL); 
-      ctrl.firq_channel_assign    <= firq_channel_init(INIT_CH_ASSIGN);
+      firq_channel_init_p(ctrl.firq_channel_assign);
     elsif rising_edge(clk_i) then
       bus_rsp_o.ack  <= bus_req_i.stb;
       bus_rsp_o.err  <= '0';
