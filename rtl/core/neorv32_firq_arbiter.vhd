@@ -26,19 +26,18 @@ use neorv32.neorv32_package.all;
 
 entity neorv32_firq_arbiter is
   generic (
+    NUM_INPUT_CH    : integer := 1;
     NUM_OUTPUT_CH   : integer := 16;
-    FIRQ_ARBITER_EN : boolean := false;
     ALL_CHANNEL_EN  : boolean := true;
     DEFAULT_EN      : boolean := true;
-    INIT_PROT_LEVEL : std_ulogic_vector := "11";
-    INIT_CH_ASSIGN  : firq_enum_t := firq_enum_t
-  );
+    INIT_PROT_LEVEL : std_ulogic_vector := "11"
+  );   
   port (
     clk_i           : in  std_ulogic;
     rstn_i          : in  std_ulogic;
     bus_req_i       : in  bus_req_t;
     bus_rsp_o       : out bus_rsp_t;
-    irq_i           : in  firq_t;
+    irq_i           : in  std_logic_vector(NUM_INPUT_CH - 1 downto 0);
     firq_o          : out std_ulogic_vector(NUM_OUTPUT_CH - 1 downto 0)
   );
 end entity neorv32_firq_arbiter;
@@ -57,8 +56,8 @@ architecture neorv32_firq_arbiter_rtl of neorv32_firq_arbiter is
   -- locked down protection level can't be changed during runtime
   constant ch_prot_level_3_c : std_ulogic_vector(1 downto 0) := "11";
 
-  type channel_num_t is array(0 to firq_o'length - 1) of 
-       std_ulogic_vector(index_size_f(firq_o'length) - 1 downto 0);
+  type channel_num_t is array(0 to NUM_OUTPUT_CH - 1) of 
+       std_ulogic_vector(index_size_f(NUM_OUTPUT_CH) - 1 downto 0);
   type channel_wrpr_level_t is array(0 to 15) of std_ulogic_vector(1 downto 0);
  
   type ctrl_t is record
@@ -72,7 +71,7 @@ architecture neorv32_firq_arbiter_rtl of neorv32_firq_arbiter is
     variable init_channel_assign_v : channel_num_t := (others => (others => '0'));
   begin
     for i in channel_num_t'range loop
-      init_channel_assign_v(i) := std_ulogic_vector(to_unsigned(irq_inputs'pos(i), init_channel_assign_v(i)'length));
+      init_channel_assign_v(i) := std_logic_vector(to_unsigned(i, index_size_f(NUM_OUTPUT_CHANNELS)));
     end loop;
     return init_channel_assign_v;
   end function firq_channel_init;
@@ -155,7 +154,7 @@ begin
     end if;
   end process l_seq_bus_access;
 
-  l_assign_output: process(ctrl) is
+  l_assign_output: process(ctrl) is         
     -- assertion: no clocked process to avoid further delay due induced flip flop
   begin
     -- range is reversed which allows lower input port numbers to be at higher 
