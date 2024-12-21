@@ -146,8 +146,7 @@ entity neorv32_top is
     IO_SLINK_EN           : boolean                        := false;       -- implement stream link interface (SLINK)?
     IO_SLINK_RX_FIFO      : natural range 1 to 2**15       := 1;           -- RX fifo depth, has to be a power of two, min 1
     IO_SLINK_TX_FIFO      : natural range 1 to 2**15       := 1;           -- TX fifo depth, has to be a power of two, min 1
-    IO_CRC_EN             : boolean                        := false;       -- implement cyclic redundancy check unit (CRC)?
-    IO_FIRQ_ARB_EN        : boolean                        := false
+    IO_CRC_EN             : boolean                        := false        -- implement cyclic redundancy check unit (CRC)?
   );
   port (
     -- Global control --
@@ -554,12 +553,16 @@ begin
     if FIRQ_ARBITER_EN generate
         neorv32_firq_arbiter_inst:
         entity neorv32.neorv32_firq_arbiter
+        generic map (
+          NUM_INPUT_CH  => firq'length,
+          NUM_OUTPUT_CH => cpu_firq'length
+        )
         port map (
           clk_i => clk_i,
           rstn_i => rstn_i,
           bus_req_i => iodev_req(IODEV_FIRQ),
           bus_rsp_o => iodev_rsp(IODEV_FIRQ),
-          irq_i => firq,
+          irq_i => to_slv(firq'length),
           firq_o => cpu_firq
         );
     end generate;
