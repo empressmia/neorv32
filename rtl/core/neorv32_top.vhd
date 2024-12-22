@@ -331,6 +331,7 @@ architecture neorv32_top_rtl of neorv32_top is
 --  );
 --  type firq_t is array (firq_enum_t) of std_ulogic;
   signal firq      : firq_t;
+  signal irq_slv   : std_logic_vector(firq'length - 1 downto 0) := neorv32.neorv32_package.to_slv(firq, firq'length);
   signal cpu_firq  : std_ulogic_vector(15 downto 0);
   signal mtime_irq : std_ulogic;
 
@@ -562,7 +563,7 @@ begin
           rstn_i    => rstn_i,
           bus_req_i => iodev_req(IODEV_FIRQ),
           bus_rsp_o => iodev_rsp(IODEV_FIRQ),
-          irq_i     => to_slv(firq, firq'length),
+          irq_i     => irq_slv,
           firq_o    => cpu_firq
         );
     end generate;
