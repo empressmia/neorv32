@@ -79,7 +79,7 @@ architecture neorv32_sysinfo_rtl of neorv32_sysinfo is
   constant xip_cache_en_c : boolean := XIP_EN and XIP_CACHE_EN;
   constant ocd_auth_en_c  : boolean := OCD_EN and OCD_AUTHENTICATION;
   constant int_imem_rom_c : boolean := int_imem_en_c and MEM_INT_IMEM_ROM;
-  constant firq_cbr_en_c  : boolean := FIRQ_CROSSBAR_EN;
+  constant firq_cb_en_c   : boolean := FIRQ_CROSSBAR_EN;
 
   -- system information memory --
   type sysinfo_t is array (0 to 3) of std_ulogic_vector(31 downto 0);
