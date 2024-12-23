@@ -40,6 +40,7 @@ entity neorv32_sysinfo is
     XIP_CACHE_EN          : boolean; -- implement execute in place cache?
     XIP_CACHE_NUM_BLOCKS  : natural; -- number of blocks (min 1), has to be a power of 2
     XIP_CACHE_BLOCK_SIZE  : natural; -- block size in bytes (min 4), has to be a power of 2
+    FIRQ_CROSSBAR_EN      : boolean;
     OCD_EN                : boolean; -- implement OCD?
     OCD_AUTHENTICATION    : boolean; -- implement OCD authenticator?
     IO_GPIO_EN            : boolean; -- implement general purpose IO port (GPIO)?
@@ -78,6 +79,7 @@ architecture neorv32_sysinfo_rtl of neorv32_sysinfo is
   constant xip_cache_en_c : boolean := XIP_EN and XIP_CACHE_EN;
   constant ocd_auth_en_c  : boolean := OCD_EN and OCD_AUTHENTICATION;
   constant int_imem_rom_c : boolean := int_imem_en_c and MEM_INT_IMEM_ROM;
+  constant firq_cbr_en_c  : boolean := FIRQ_CROSSBAR_EN;
 
   -- system information memory --
   type sysinfo_t is array (0 to 3) of std_ulogic_vector(31 downto 0);
@@ -123,7 +125,7 @@ begin
   sysinfo(2)(10) <= '1' when xip_cache_en_c    else '0'; -- execute in-place cache implemented?
   sysinfo(2)(11) <= '1' when ocd_auth_en_c     else '0'; -- on-chip debugger authentication implemented?
   sysinfo(2)(12) <= '1' when int_imem_rom_c    else '0'; -- processor-internal instruction memory implemented as pre-initialized ROM?
-  sysinfo(2)(13) <= '0';                                 -- reserved
+  sysinfo(2)(13) <= '1' when firq_cb_en_c      else '0'; -- irq crossbar module
   sysinfo(2)(14) <= '1' when IO_DMA_EN         else '0'; -- direct memory access controller (DMA) implemented?
   sysinfo(2)(15) <= '1' when IO_GPIO_EN        else '0'; -- general purpose input/output port unit (GPIO) implemented?
   sysinfo(2)(16) <= '1' when IO_MTIME_EN       else '0'; -- machine system timer (MTIME) implemented?

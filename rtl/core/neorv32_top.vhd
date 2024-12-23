@@ -111,7 +111,7 @@ entity neorv32_top is
     -- External Interrupts Controller (XIRQ) --
     XIRQ_NUM_CH           : natural range 0 to 32          := 0;           -- number of external IRQ channels (0..32)
     -- Internal Interrupt Controller (FIRQ-ARBITER)
-    FIRQ_ARBITER_EN       : boolean                        := false;
+    FIRQ_ARBITER_EN       : boolean                        := true;
 
     -- Processor peripherals --
     IO_DISABLE_SYSINFO    : boolean                        := false;       -- disable the SYSINFO module (for advanced users only)
@@ -331,7 +331,7 @@ architecture neorv32_top_rtl of neorv32_top is
 --  );
 --  type firq_t is array (firq_enum_t) of std_ulogic;
   signal firq      : firq_t;
-  signal irq_slv   : std_logic_vector(firq'length - 1 downto 0) := neorv32.neorv32_package.to_slv(firq, firq'length);
+  signal irq_slv   : std_logic_vector := neorv32.neorv32_package.to_slv(firq, firq'length);
   signal cpu_firq  : std_ulogic_vector(15 downto 0);
   signal mtime_irq : std_ulogic;
 
@@ -1631,6 +1631,7 @@ begin
         XIP_CACHE_EN          => XIP_CACHE_EN,
         XIP_CACHE_NUM_BLOCKS  => XIP_CACHE_NUM_BLOCKS,
         XIP_CACHE_BLOCK_SIZE  => XIP_CACHE_BLOCK_SIZE,
+        FIRQ_CROSSBAR_EN      => FIRQ_ARBITER_EN,
         OCD_EN                => OCD_EN,
         OCD_AUTHENTICATION    => OCD_AUTHENTICATION,
         IO_GPIO_EN            => io_gpio_en_c,

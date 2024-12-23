@@ -789,7 +789,7 @@ package neorv32_package is
       -- External Interrupts Controller (XIRQ) --
       XIRQ_NUM_CH           : natural range 0 to 32          := 0;
       -- Internal interrupts controller (firq-arbiter)
-      FIRQ_ARBITER_EN       : boolean                        := false;
+      FIRQ_ARBITER_EN       : boolean                        := true;
       -- Processor peripherals --
       IO_DISABLE_SYSINFO    : boolean                        := false;
       IO_GPIO_NUM           : natural range 0 to 64          := 0;
