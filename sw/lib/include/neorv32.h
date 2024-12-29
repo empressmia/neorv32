@@ -54,7 +54,7 @@ extern "C" {
 //#define NEORV32_???_BASE   (0xFFFFE700U) /**< reserved */
 //#define NEORV32_???_BASE   (0xFFFFE800U) /**< reserved */
 //#define NEORV32_???_BASE   (0xFFFFE900U) /**< reserved */
-//#define NEORV32_???_BASE   (0xFFFFEA00U) /**< reserved */
+#define NEORV32_FIRQ_CB_BASE (0xFFFFEA00U) /**< reserved */
 #define NEORV32_CFS_BASE     (0xFFFFEB00U) /**< Custom Functions Subsystem (CFS) */
 #define NEORV32_SLINK_BASE   (0xFFFFEC00U) /**< Stream Link Interface (SLINK) */
 #define NEORV32_DMA_BASE     (0xFFFFED00U) /**< Direct Memory Access Controller (DMA) */
