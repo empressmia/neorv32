@@ -29,7 +29,7 @@ package neorv32_package is
 
   -- Architecture Constants -----------------------------------------------------------------
   -- -------------------------------------------------------------------------------------------
-  constant hw_version_c : std_ulogic_vector(31 downto 0) := x"01100700"; -- hardware version
+  constant hw_version_c : std_ulogic_vector(31 downto 0) := x"01100805"; -- hardware version
   constant archid_c     : natural := 19; -- official RISC-V architecture ID
   constant XLEN         : natural := 32; -- native data path width
 
@@ -50,14 +50,12 @@ package neorv32_package is
   -- Main Address Regions (base address must be aligned to the region's size) ---
   constant mem_imem_base_c : std_ulogic_vector(31 downto 0) := x"00000000"; -- IMEM size via generic
   constant mem_dmem_base_c : std_ulogic_vector(31 downto 0) := x"80000000"; -- DMEM size via generic
-  constant mem_xip_base_c  : std_ulogic_vector(31 downto 0) := x"e0000000"; -- page (4MSBs) only!
+  constant mem_xip_base_c  : std_ulogic_vector(31 downto 0) := x"e0000000"; -- page (4 MSBs) only!
   constant mem_xip_size_c  : natural := 256*1024*1024;
-  constant mem_boot_base_c : std_ulogic_vector(31 downto 0) := x"ffffc000";
-  constant mem_boot_size_c : natural := 8*1024;
-  constant mem_io_base_c   : std_ulogic_vector(31 downto 0) := x"ffffe000";
-  constant mem_io_size_c   : natural := 8*1024; -- = 32 * iodev_size_c
+  constant mem_io_base_c   : std_ulogic_vector(31 downto 0) := x"ffe00000";
+  constant mem_io_size_c   : natural := 32*64*1024; -- = 32 * iodev_size_c
 
-  -- Start of uncached memory access (256MB page / 4MSBs only) --
+  -- Start of uncached memory access (256MB page / 4 MSBs only) --
   constant mem_uncached_begin_c  : std_ulogic_vector(31 downto 0) := x"f0000000";
 
   -- IO Address Map (base address must be aligned to the region's size) --
@@ -96,8 +94,8 @@ package neorv32_package is
   constant base_io_dm_c      : std_ulogic_vector(31 downto 0) := x"ffffff00";
 
   -- On-Chip Debugger - Debug Module Entry Points (Code ROM) --
-  constant dm_exc_entry_c  : std_ulogic_vector(31 downto 0) := x"ffffff00"; -- = base_io_dm_c + 0, exceptions entry point
-  constant dm_park_entry_c : std_ulogic_vector(31 downto 0) := x"ffffff08"; -- = base_io_dm_c + 8, normal entry point
+  constant dm_exc_entry_c  : std_ulogic_vector(31 downto 0) := x"fffffe00"; -- = base_io_ocd_c + code_rom_base + 0
+  constant dm_park_entry_c : std_ulogic_vector(31 downto 0) := x"fffffe10"; -- = base_io_ocd_c + code_rom_base + 16
 
 -- **********************************************************************************************************
 -- SoC Definitions
@@ -131,7 +129,10 @@ package neorv32_package is
     src   : std_ulogic; -- access source (1=instruction fetch, 0=data access)
     priv  : std_ulogic; -- set if privileged (machine-mode) access
     rvso  : std_ulogic; -- set if reservation set operation (atomic LR/SC)
-    fence : std_ulogic; -- set if fence(.i) operation, single-shot (out-of-band)
+    -- out-of-band signals --
+    fence : std_ulogic; -- set if fence(.i) request by upstream device, single-shot
+    sleep : std_ulogic; -- set if ALL upstream sources are in sleep mode
+    debug : std_ulogic; -- set if upstream device is in debug mode
   end record;
 
   -- bus response --
@@ -151,7 +152,9 @@ package neorv32_package is
     src   => '0',
     priv  => '0',
     rvso  => '0',
-    fence => '0'
+    fence => '0',
+    sleep => '1',
+    debug => '0'
   );
 
   -- endpoint (response) termination --
@@ -193,6 +196,17 @@ package neorv32_package is
     stb  : std_ulogic; -- strobe
     cyc  : std_ulogic; -- valid cycle
   end record;
+
+  -- source (request) termination --
+  constant xbus_req_terminate_c : xbus_req_t := (
+    addr => (others => '0'),
+    data => (others => '0'),
+    tag  => (others => '0'),
+    we   => '0',
+    sel  => (others => '0'),
+    stb  => '0',
+    cyc  => '0'
+  );
 
   -- xbus response --
   type xbus_rsp_t is record
@@ -705,6 +719,7 @@ package neorv32_package is
   function replicate_f(input : std_ulogic; num : natural) return std_ulogic_vector;
   impure function mem32_init_f(init : mem32_t; depth : natural) return mem32_t;
   function print_version_f(version : std_ulogic_vector(31 downto 0)) return string;
+  function match_f(input : std_ulogic_vector; pattern : std_ulogic_vector) return boolean;
   function to_slv(constant irq_inputs : firq_t; constant length : integer) return std_logic_vector;
 
 -- **********************************************************************************************************
@@ -749,9 +764,10 @@ package neorv32_package is
       RISCV_ISA_Zksh        : boolean                        := false;
       RISCV_ISA_Zxcfu       : boolean                        := false;
       -- Tuning Options --
-      FAST_MUL_EN           : boolean                        := false;
-      FAST_SHIFT_EN         : boolean                        := false;
-      REGFILE_HW_RST        : boolean                        := false;
+      CPU_CLOCK_GATING_EN   : boolean                        := false;
+      CPU_FAST_MUL_EN       : boolean                        := false;
+      CPU_FAST_SHIFT_EN     : boolean                        := false;
+      CPU_RF_HW_RST_EN      : boolean                        := false;
       -- Physical Memory Protection (PMP) --
       PMP_NUM_REGIONS       : natural range 0 to 16          := 0;
       PMP_MIN_GRANULARITY   : natural                        := 4;
@@ -793,7 +809,7 @@ package neorv32_package is
       -- Processor peripherals --
       IO_DISABLE_SYSINFO    : boolean                        := false;
       IO_GPIO_NUM           : natural range 0 to 64          := 0;
-      IO_MTIME_EN           : boolean                        := false;
+      IO_CLINT_EN           : boolean                        := false;
       IO_UART0_EN           : boolean                        := false;
       IO_UART0_RX_FIFO      : natural range 1 to 2**15       := 1;
       IO_UART0_TX_FIFO      : natural range 1 to 2**15       := 1;
@@ -806,6 +822,8 @@ package neorv32_package is
       IO_SDI_FIFO           : natural range 1 to 2**15       := 1;
       IO_TWI_EN             : boolean                        := false;
       IO_TWI_FIFO           : natural range 1 to 2**15       := 1;
+      IO_TWD_EN             : boolean                        := false;
+      IO_TWD_FIFO           : natural range 1 to 2**15       := 1;
       IO_PWM_NUM_CH         : natural range 0 to 16          := 0;
       IO_WDT_EN             : boolean                        := false;
       IO_TRNG_EN            : boolean                        := false;
@@ -889,6 +907,11 @@ package neorv32_package is
       twi_sda_o      : out std_ulogic;
       twi_scl_i      : in  std_ulogic := 'H';
       twi_scl_o      : out std_ulogic;
+      -- TWD (available if IO_TWD_EN = true) --
+      twd_sda_i      : in  std_ulogic := 'H';
+      twd_sda_o      : out std_ulogic;
+      twd_scl_i      : in  std_ulogic := 'H';
+      twd_scl_o      : out std_ulogic;
       -- 1-Wire Interface (available if IO_ONEWIRE_EN = true) --
       onewire_i      : in  std_ulogic := 'H';
       onewire_o      : out std_ulogic;
@@ -899,7 +922,7 @@ package neorv32_package is
       cfs_out_o      : out std_ulogic_vector(IO_CFS_OUT_SIZE-1 downto 0);
       -- NeoPixel-compatible smart LED interface (available if IO_NEOLED_EN = true) --
       neoled_o       : out std_ulogic;
-      -- Machine timer system time (available if IO_MTIME_EN = true) --
+      -- Machine timer system time (available if IO_CLINT_EN = true) --
       mtime_time_o   : out std_ulogic_vector(63 downto 0);
       -- External platform interrupts (available if XIRQ_NUM_CH > 0) --
       xirq_i         : in  std_ulogic_vector(31 downto 0) := (others => 'L');
@@ -1167,6 +1190,25 @@ package body neorv32_package is
     return res_v;
   end function print_version_f;
 
+  -- Check if signal matches binary pattern (skip elements compared with '-') ---------------
+  -- -------------------------------------------------------------------------------------------
+  function match_f(input : std_ulogic_vector; pattern : std_ulogic_vector) return boolean is
+    variable match_v : boolean;
+  begin
+    if (input'length /= pattern'length) then
+      report "[NEORV32] match_f: input and pattern have different sizes!" severity error;
+      return false;
+    else
+      match_v := true;
+      for i in input'length-1 downto 0 loop
+        if (pattern(i) = '1') or (pattern(i) = '0') then -- valid pattern value, skip everything else
+          match_v := match_v and boolean(pattern(i) = input(i));
+        end if;
+      end loop;
+      return match_v;
+    end if;
+  end function match_f;
+
   function to_slv(
     constant irq_inputs :  firq_t;
     constant length     :  integer
@@ -1181,5 +1223,6 @@ package body neorv32_package is
     end loop;
     return vRet;
   end function to_slv;
+
 
 end neorv32_package;
